@@ -2,7 +2,7 @@ from json import dumps
 from random import random
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from utilities import check_exists_by_xpath, preprocess_webpage
+from utilities import check_exists_by_xpath, is_text_date, preprocess_webpage
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 from time import sleep 
@@ -32,10 +32,21 @@ driver = webdriver.Chrome(
 for article_to_scrape in list_cur:
     driver.get(article_to_scrape['link'])
     
-    
     articles_to_scrape_collection.update_one({"link": article_to_scrape['link']}, {'$set': {"scraped": True}})
 
     sleep(0.8)
+    public_date = ""
+
+    if(check_exists_by_xpath(driver,'.//div[@id="publication"]')):
+        candidate_public_dates = driver.find_element(By.XPATH,'.//div[@id="publication"]').find_elements(By.XPATH,'.//div[@class="text-xs"]')
+        
+        for elem in candidate_public_dates:
+            if(is_text_date(elem.text.lower())):
+                public_date = elem.text
+                print(public_date)
+                break
+             
+             
     driver.execute_script(
             "window.scrollTo(0, document.body.scrollHeight/3);")
     sleep(random())
@@ -50,14 +61,12 @@ for article_to_scrape in list_cur:
         body = driver.find_element(by=By.XPATH, value='.//div[@id="body"]').text
     else:
         continue
-
     title = driver.find_element(by=By.XPATH, value='.//h1[@id="screen-reader-main-title"]').text
 
     author_block = driver.find_element(by=By.XPATH, value='.//div[@class="author-group"]')
     authors_block_list = author_block.find_elements(by=By.XPATH, value='.//span[@class="react-xocs-alternative-link"]')
     
     authors = [author.text for author in authors_block_list]
-    
     highlights = ""
     if(check_exists_by_xpath(driver, './/div[@class="abstract author-highlights"]')):
         highlights = driver.find_element(by=By.XPATH, value='.//div[@class="abstract author-highlights"]').text
@@ -67,8 +76,8 @@ for article_to_scrape in list_cur:
         abstract = driver.find_element(by=By.XPATH, value='.//div[@class="abstract author"]').text
     
     try:
-        articles.insert_one({"link": article_to_scrape['link'], "title": title, "authors": authors, "abstract": abstract, "highlights": highlights, "body": body})
-        print(len(body))
+        articles.insert_one({"link": article_to_scrape['link'], "title": title, "public_date": public_date, "authors": authors, "abstract": abstract, "highlights": highlights, "body": body})
+        
     except DuplicateKeyError as e:
         print("document already present in DB")
         continue

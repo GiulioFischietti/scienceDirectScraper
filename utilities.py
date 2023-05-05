@@ -1,6 +1,14 @@
 from time import sleep
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
 from selenium.webdriver.common.by import By
+from constants import months
+
+def is_text_date(text):
+    for split in text.split(" "):
+        if (split in months):
+            return True
+    return False
+    
 
 def check_exists_by_xpath(driver, xpath):
     try:
