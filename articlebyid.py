@@ -8,6 +8,7 @@ from selenium.webdriver.chrome.options import Options
 from time import sleep 
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
+from tqdm import tqdm
 
 client = MongoClient('localhost', 27017)
 db = client.scientific_articles
@@ -29,7 +30,7 @@ chrome_options.add_argument("--start-maximized")
 driver = webdriver.Chrome(
     ChromeDriverManager().install(), options=chrome_options)
 
-for article_to_scrape in list_cur:
+for article_to_scrape in tqdm(list_cur):
     driver.get(article_to_scrape['link'])
     
     articles_to_scrape_collection.update_one({"link": article_to_scrape['link']}, {'$set': {"scraped": True}})
@@ -43,7 +44,7 @@ for article_to_scrape in list_cur:
         for elem in candidate_public_dates:
             if(is_text_date(elem.text.lower())):
                 public_date = elem.text
-                print(public_date)
+                # print(public_date)
                 break
              
              
